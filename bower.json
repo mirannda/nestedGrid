@@ -1,0 +1,29 @@
+{
+  "name": "nestedgrid",
+  "main": "nestedGrid.js",
+  "homepage": "https://github.com/ribomo/nestedGrid",
+  "authors": [
+    "Ribo Mo <ribomo42@gmail.com>"
+  ],
+  "description": "",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "grid",
+    "table",
+    "nested"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.2.1"
+  },
+  "version": "0.0.2"
+}
