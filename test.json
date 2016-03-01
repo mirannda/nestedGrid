@@ -1,0 +1,39 @@
+{
+  "data": [
+    {
+      "col1": "data1",
+      "col2": "data2",
+      "col3": "data3",
+      "subtable": [
+        {
+          "subcol1": "subdata1",
+          "subcol2": "subdata2",
+          "subcol3": "subdata3"
+        },
+        {
+          "subcol1": "ummm",
+          "subcol2": "ummmmm",
+          "subcol3": "ummmmmmmm"
+        }
+      ]
+    },
+    {
+      "col1": "aaa",
+      "col2": "bbb",
+      "col3": "ccc"
+    },
+    {
+      "col3": "3",
+      "col2": "2",
+      "col1" : "1",
+      "subtable": [
+        {
+          "subcol1": "subdata1",
+          "subcol2": "subdata2",
+          "subcol3": "subdata3"
+        }
+      ]
+    }
+  ],
+  "fields": ["col1", "col2", "col3", "subtable.subcol1", "subtable.subcol2", "subtable.subcol3"]
+}
