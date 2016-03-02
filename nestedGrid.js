@@ -108,7 +108,7 @@
                 }
                 return result;
             }(this.fields);
-            var subgridData = this.data[this.showSubgrid()[0]];
+            var subgridData = this.data[this.getSubgridName()[0]];
             var subgrid = new Grid(subgridData, subgridFieldInfo.fields, subgridFieldInfo.table);
             var $expand = $("<a>").append("expand").attr("href", "#").click(this.expandClickEvent(subgrid.$grid.addClass("subgrid")));
             return $("<td>").addClass("subgrid-trigger").append($expand);
@@ -142,28 +142,17 @@
 
         editEvent: function(){
             var that = this;
-            var rowData = function () {
-                var rowData = {};
-                for (var j = 0; j < that.fields.length; j++) {
-                    if (that.fields[j].indexOf(".") === -1) {
-                        rowData[that.fields[j]] = that.data[that.fields[j]];
-                    }
-                }
-                return rowData;
-            }();
             var getData = function(){
                 var obj = {};
                 var i = 0;
                 that.$row.find("td.data").each(function(){
-                    var attribute = $(this).text();
-                    obj[that.topLevelFields[i]] = attribute;
+                    obj[that.topLevelFields[i]] = $(this).text();;
                     i++;
                 });
                 return obj;
             };
             var getTableName = function () {
-                var x = that.$row.parent().parent().data("table");
-                return x;
+                return that.$row.parent().parent().data("table");
             };
             return {
                 saveClickEvent: function () {
@@ -172,7 +161,7 @@
                         purpose: "edit",
                         tableName: getTableName(),
                         new: newData,
-                        old: rowData,
+                        old: that.data
                     };
                     console.log(object.new);
                     console.log(object.old);
@@ -180,8 +169,8 @@
                     $.ajax({
                         method: "post",
                         url: ajax_setting.url,
-                        dateType: "json",
-                        data: object,
+                        dataType: "json",
+                        data: JSON.stringify(object),
                     });
                 },
                 deleteClickEvent: function(){
@@ -195,8 +184,8 @@
                     $.ajax({
                         method: "post",
                         url: ajax_setting.url,
-                        dateType: "json",
-                        data: object,
+                        dataType: "json",
+                        data: JSON.stringify(object),
                     });
                 }
             }
@@ -210,7 +199,7 @@
             return maxCol;
         },
 
-        showSubgrid: function(){
+        getSubgridName: function(){
             var result = [];
             for(var i=0;i<this.fields.length;i++){
                 if(this.fields[i].indexOf(".") !== -1){
@@ -224,21 +213,8 @@
         },
 
         isSubgridExist: function(){
-            if(this.data[this.showSubgrid()[0]] !== undefined){
-                return true;
-            }
-            else{
-                return false;
-            }
+            return this.data[this.getSubgridName()[0]] !== undefined;
         },
-
-        getRowValues: function(){
-            var result = [];
-            this.$row.find("td.data").each(function(){
-                result.push($(this).text());
-            });
-            return result;
-        }
     };
 
     function Grid(data, fields, tableName){
@@ -267,7 +243,7 @@
         createHeader: function(fields){
             fields = showTopLevelFields(this.fields);
             var $fieldData = [];
-            $fieldData.push($("<th>").append("Show More"))
+            $fieldData.push($("<th>").append("Show More"));
             for(var i=0;i<fields.length;i++){
                 var $field = $("<th>").append(fields[i]);
                 $field.width(GRID_WIDTH);
