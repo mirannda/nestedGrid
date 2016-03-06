@@ -4,15 +4,15 @@
 
     var GRID_WIDTH = 200;
 
-    $.fn.nestedGrid = function(options){
+    $.fn.nestedGrid = function (options) {
         $.fn.nestedGrid.Options = $.extend($.fn.nestedGrid.defaultOptions, options);
-        this.each(function(){
+        this.each(function () {
             var $table = $(this);
             setGrid($table, options);
         });
     };
 
-    //Provide default options for plugin
+    // Provide default options for plugin
     $.fn.nestedGrid.defaultOptions = {
         ajax: {
             method: "post",
@@ -20,25 +20,34 @@
         }
     };
 
+    // Reload the grid
+    $.fn.nestedGrid.reloadGrid = function ($container) {
+        var data = $container.children().data("data");
+        var fields = $container.children().data("fields");
+        var tableName = $container.children().data("table");
+        var newGrid = new Grid(data, fields, tableName);
+        $container.html(newGrid.$grid);
+    };
+
     // Pass in selector and this function will make it a grid!
-    var setGrid = function($table, userSettings){
+    var setGrid = function ($table, userSettings) {
         var options = $.fn.nestedGrid.Options;
 
         // generate from AJAX
         if (!options.data) {
             var request = $.ajax(options.ajax);
-            return request.success(function(result){
+            return request.success(function (result) {
                 var grid = new Grid(result.data, result.fields, result.tableName);
                 $table.html(grid.$grid);
             });
         }
-        else{
+        else {
             var grid = new Grid(userSettings.data, userSettings.fields, userSettings.tableName);
             $table.html(grid.$grid);
         }
     };
 
-    function Grid(data, fields, tableName){
+    function Grid(data, fields, tableName) {
         this.data = data;
         this.fields = fields;
         this.tableName = tableName;
@@ -61,7 +70,7 @@
             var fields = showTopLevelFields(this.fields);
             var $fieldData = [];
             $fieldData.push($("<th>").append("Show More"));
-            for(var i=0;i<fields.length;i++){
+            for (var i = 0; i < fields.length; i++) {
                 var $field = $("<th>").append(fields[i]);
                 $field.width(GRID_WIDTH);
                 $fieldData.push($field);
@@ -70,9 +79,9 @@
             return $("<thead><tr>").append($fieldData);
         },
 
-        createBody: function(){
+        createBody: function () {
             var rows = [];
-            for(var i=0;i<this.data.length;i++){
+            for (var i = 0; i < this.data.length; i++) {
                 var row = new Row(this.data[i], this.fields, this.$grid);
                 rows = rows.concat(rows, row.getRow());
             }
@@ -81,8 +90,8 @@
 
     };
 
-    //Constructor for Row
-    function Row(data, fields, $grid){
+    // Constructor for Row
+    function Row(data, fields, $grid) {
         this.data = data;
         this.fields = fields;
         this.$grid = $grid;
@@ -93,49 +102,46 @@
     }
 
     Row.prototype = {
-        init: function(){
+        init: function () {
             this.$row = $("<tr>");
             this.topLevelFields = showTopLevelFields(this.fields);
             this.createRow();
         },
 
-        getRow: function(){
+        //Return $row selector and $subgrid selector
+        getRow: function () {
             var result = [];
             result.push(this.$row);
-            if(this.$subgrid){
+            if (this.$subgrid) {
                 result.push(this.$subgrid);
             }
             return result;
         },
 
-        //Return single row in the table
-        createRow: function(){
+        createRow: function () {
             var $rowData = [];
-            var $subgridTrigger = $("<td>");
-            if(this.isSubgridExist()){
-                $subgridTrigger = this.createSubgridTrigger();
-            }
-
+            var $subgridTrigger = this.createSubgridTrigger();
             $rowData.push($subgridTrigger);
-            $rowData = $rowData.concat(this.getCellsData());
+            $rowData = $rowData.concat(this.createCells());
             $rowData.push(this.createSaveDeleteField());
             this.$row.append($rowData);
+
+            // Event delegation
             this.$row.on("click", ".save-link", this.editEvent().saveClickEvent);
             this.$row.on("click", ".delete-link", this.editEvent().deleteClickEvent);
+            this.$row.on("click", ".text-field", this.fieldClickEvent());
 
-
-            //Add subgrid
-            if(this.isSubgridExist()) {
+            // Add subgrid
+            if (this.isSubgridExist()) {
                 this.$subgrid = this.createSubgrid();
+                var that = this;
+                this.$row.on("click", ".subgrid-trigger", function () {
+                    that.$subgrid.toggle();
+                });
             }
-
-            var that = this;
-            this.$row.on("click", ".subgrid-trigger", function(){
-                that.$subgrid.toggle();
-            });
         },
 
-        createSubgrid: function(){
+        createSubgrid: function () {
             var subgridInfo = function (fields) {
                 var result = {
                     fields: [],
@@ -162,31 +168,30 @@
         },
 
         //Return all the data contain in the fields
-        getCellsData: function(){
+        createCells: function () {
             var fields = this.topLevelFields;
             var $result = [];
-            for(var i=0;i<fields.length;i++){
-                var $fieldData = $("<td>").append(this.data[fields[i]]).addClass("data");
-                $fieldData.click(this.fieldClickEvent());
+            for (var i = 0; i < fields.length; i++) {
+                var $fieldData = $("<td>").append(this.data[fields[i]]).addClass("text-field");
                 $result.push($fieldData);
             }
             return $result;
         },
 
-        fieldClickEvent: function(){
+        fieldClickEvent: function () {
             //Change normal field to text box which allows user to edit.
-            var changeField2TextBox = function changeField2TextBox($field){
+            var changeField2TextBox = function changeField2TextBox($field) {
                 var text = $field.text();
                 var $textBox = $("<input>").attr("type", "text").attr("value", text).css("width", "95%");
                 $field.text('').append($textBox);
-                $field.focusout(function(){
+                $field.focusout(function () {
                     var text = $textBox.val();
                     $textBox.parent().text(text);
                     $textBox.remove();
                 });
                 $textBox.select();
             };
-            return function (){
+            return function () {
                 if (($(this)).has("input").length === 0) {
                     changeField2TextBox($(this));
                 }
@@ -194,25 +199,30 @@
         },
 
         createSubgridTrigger: function () {
-            var $expand = $("<a>").append("expand").attr("href", "#").addClass("subgrid-trigger");
-            return $("<td>").append($expand);
+            if (this.isSubgridExist()) {
+                var $expand = $("<a>").append("expand").attr("href", "#").addClass("subgrid-trigger");
+                return $("<td>").append($expand);
+            }
+            else{
+                return $("<td>");
+            }
         },
 
-        createSaveDeleteField: function(){
+        createSaveDeleteField: function () {
             var $editField = $("<td>");
-            var $save = $("<a>").append("save").attr("href","#").addClass("save-link");
-            var $delete = $("<a>").append("delete").attr("href","#").addClass("delete-link");
+            var $save = $("<a>").append("save").attr("href", "#").addClass("save-link");
+            var $delete = $("<a>").append("delete").attr("href", "#").addClass("delete-link");
             $editField.append($save).append(" ").append($delete);
             return $editField;
         },
 
         // Event Handlers for edit and delete button
-        editEvent: function(){
+        editEvent: function () {
             var that = this;
-            var getData = function(){
+            var getData = function () {
                 var obj = {};
                 var i = 0;
-                that.$row.find("td.data").each(function(){
+                that.$row.find("td.data").each(function () {
                     obj[that.topLevelFields[i]] = $(this).text();
                     i++;
                 });
@@ -224,24 +234,25 @@
             var options = $.fn.nestedGrid.Options;
             return {
                 saveClickEvent: function () {
-                        var newData = getData();
-                        var object = {
-                            purpose: "edit",
-                            tableName: getTableName(),
-                            new: newData,
-                            old: that.data
-                        };
-                        console.log(object.new);
-                        console.log(object.old);
-                        //Pass data to server
-                        $.ajax({
-                            method: "post",
-                            url: options.ajax.url,
-                            dataType: "json",
-                            data: JSON.stringify(object)
-                        });
+                    var newData = getData();
+                    var object = {
+                        purpose: "edit",
+                        tableName: getTableName(),
+                        new: newData,
+                        old: that.data
+                    };
+                    console.log(object.new);
+                    console.log(object.old);
+                    //Pass data to server
+                    $.ajax({
+                        method: "post",
+                        url: options.ajax.url,
+                        dataType: "json",
+                        data: JSON.stringify(object)
+                    });
+                    that.reloadRow();
                 },
-                deleteClickEvent: function(){
+                deleteClickEvent: function () {
                     var object = {
                         purpose: "delete",
                         tableName: getTableName(),
@@ -259,20 +270,20 @@
             }
         },
 
-        getMaxCol: function(){
+        getMaxCol: function () {
             var maxCol = 0;
-            this.$row.find('td').each(function() {
+            this.$row.find('td').each(function () {
                 maxCol += 1;
             });
             return maxCol;
         },
 
-        getSubgridName: function(){
+        getSubgridName: function () {
             var result = [];
-            for(var i=0;i<this.fields.length;i++){
-                if(this.fields[i].indexOf(".") !== -1){
+            for (var i = 0; i < this.fields.length; i++) {
+                if (this.fields[i].indexOf(".") !== -1) {
                     var data = this.fields[i].split(".");
-                    if(result.indexOf(data[0]) === -1){
+                    if (result.indexOf(data[0]) === -1) {
                         result.push(data[0]);
                     }
                 }
@@ -280,25 +291,31 @@
             return result;
         },
 
-        isSubgridExist: function(){
+        isSubgridExist: function () {
             return this.data[this.getSubgridName()[0]] !== undefined;
+        },
+
+        reloadRow: function(){
+            var row = new Row(this.data, this.fields, this.$grid);
+            this.$row.html(row.$row.html());
+            this.$subgrid.html(row.$subgrid.html());
         }
     };
 
 
-    $.fn.nestedGrid.refreshGrid = function($grid){
-        var data = $grid.data("data");
-        var fields = $grid.data("fields");
-        var tableName = $grid.data("table");
+    $.fn.nestedGrid.reloadGrid = function ($container) {
+        var data = $container.children().data("data");
+        var fields = $container.children().data("fields");
+        var tableName = $container.children().data("table");
         var newGrid = new Grid(data, fields, tableName);
-        $grid.html(newGrid.$grid.html());
+        $container.html(newGrid.$grid);
     };
 
     //Only show fields that are in top level
-    function showTopLevelFields(fields){
+    function showTopLevelFields(fields) {
         var result = [];
-        for(var i=0;i<fields.length;i++){
-            if(fields[i].indexOf(".") === -1){
+        for (var i = 0; i < fields.length; i++) {
+            if (fields[i].indexOf(".") === -1) {
                 result.push(fields[i]);
             }
         }
