@@ -83,6 +83,13 @@
             var rows = [];
             for (var i = 0; i < this.data.length; i++) {
                 var row = new Row(this.data[i], this.fields, this.$grid);
+
+                // Add Strap
+                if(i%2 == 0){
+                    row.$row.addClass("odd-row");
+                }else{
+                    row.$row.addClass("even-row");
+                }
                 rows = rows.concat(rows, row.getRow());
             }
             return $("<tbody>").append(rows);
@@ -136,11 +143,21 @@
                 this.$subgrid = this.createSubgrid();
                 var that = this;
                 this.$row.on("click", ".subgrid-trigger", function () {
-                    that.$subgrid.toggle();
+                    that.$subgrid.fadeToggle();
+                    var $this = $(this);
+                    if($this.hasClass("expand")){
+                        $this.removeClass("expand");
+                        $this.addClass("collapse");
+                    }
+                    else {
+                        $this.removeClass("collapse");
+                        $this.addClass("expand");
+                    }
                 });
             }
         },
 
+        // Add subgrid to existing grid
         createSubgrid: function () {
             var subgridInfo = function (fields) {
                 var result = {
@@ -167,7 +184,7 @@
             return $insertRow;
         },
 
-        //Return all the data contain in the fields
+        // Return all the data contain in the fields
         createCells: function () {
             var fields = this.topLevelFields;
             var $result = [];
@@ -178,6 +195,7 @@
             return $result;
         },
 
+        // Event handlers for save and delete
         fieldClickEvent: function () {
             //Change normal field to text box which allows user to edit.
             var changeField2TextBox = function changeField2TextBox($field) {
@@ -198,9 +216,10 @@
             };
         },
 
+        // Add trigger
         createSubgridTrigger: function () {
             if (this.isSubgridExist()) {
-                var $expand = $("<a>").append("expand").attr("href", "#").addClass("subgrid-trigger");
+                var $expand = $("<div>").addClass("subgrid-trigger").addClass("expand");
                 return $("<td>").append($expand);
             }
             else{
@@ -266,6 +285,7 @@
                         dataType: "json",
                         data: JSON.stringify(object)
                     });
+                    //$.fn.nestedGrid.reloadGrid(that.$grid.parent());
                 }
             }
         },
