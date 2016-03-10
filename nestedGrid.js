@@ -263,7 +263,6 @@
                 $("html").click(function (event) {
                     if (!$(event.target).closest(".nestedGrid").length && !$(event.target).is(".nestedGrid")) {
                         removeEditing.bind(this)();
-                        console.log("lalla");
                         $("html").off("click");
                     }
                 });
