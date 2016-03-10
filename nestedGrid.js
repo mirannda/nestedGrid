@@ -69,7 +69,7 @@
         createHeader: function () {
             var fields = showTopLevelFields(this.fields);
             var $fieldData = [];
-            $fieldData.push($("<th>").append("Show More"));
+            $fieldData.push($("<th>"));
             for (var i = 0; i < fields.length; i++) {
                 var $field = $("<th>").append(fields[i]);
                 $field.width(GRID_WIDTH);
@@ -85,9 +85,9 @@
                 var row = new Row(this.data[i], this.fields, this.$grid);
 
                 // Add Strap
-                if(i%2 == 0){
+                if (i % 2 == 0) {
                     row.$row.addClass("odd-row");
-                }else{
+                } else {
                     row.$row.addClass("even-row");
                 }
                 rows = rows.concat(rows, row.getRow());
@@ -136,7 +136,8 @@
             // Event delegation
             this.$row.on("click", ".save-link", this.editEvent().saveClickEvent);
             this.$row.on("click", ".delete-link", this.editEvent().deleteClickEvent);
-            this.$row.on("click", ".text-field", this.fieldClickEvent());
+            this.$row.on("click", ".text-field", this.editRow);
+            //this.$row.on("click", ".text-field", this.fieldClickEvent());
 
             // Add subgrid
             if (this.isSubgridExist()) {
@@ -145,7 +146,7 @@
                 this.$row.on("click", ".subgrid-trigger", function () {
                     that.$subgrid.fadeToggle();
                     var $this = $(this);
-                    if($this.hasClass("expand")){
+                    if ($this.hasClass("expand")) {
                         $this.removeClass("expand");
                         $this.addClass("collapse");
                     }
@@ -159,6 +160,7 @@
 
         // Add subgrid to existing grid
         createSubgrid: function () {
+            var that = this;
             var subgridInfo = function (fields) {
                 var result = {
                     fields: [],
@@ -175,10 +177,17 @@
                 }
                 return result;
             }(this.fields);
+            var maxCol = function () {
+                var maxCol = 0;
+                that.$row.find('td').each(function () {
+                    maxCol += 1;
+                });
+                return maxCol;
+            }();
             var subgridData = this.data[this.getSubgridName()[0]];
             var subgrid = new Grid(subgridData, subgridInfo.fields, subgridInfo.table);
             subgrid.$grid.addClass("subgrid");
-            var $insertCell = $("<td>").append(subgrid.$grid).attr("colspan", this.getMaxCol());
+            var $insertCell = $("<td>").append(subgrid.$grid).attr("colspan", maxCol);
             var $insertRow = $("<tr>").append($insertCell).addClass("collapse");
             $insertRow.hide();
             return $insertRow;
@@ -216,13 +225,58 @@
             };
         },
 
+        // Allow user to edit data in the row
+        editRow: function () {
+            var removeEditing = function(){
+                $(this).find(".text-field").each(function () {
+                    var textBox = $(this).find("input");
+                    $(this).text(textBox.val());
+                    textBox.remove();
+                });
+                $(this).removeClass("editing");
+            };
+
+            var $row = $(this).parent();
+
+            if ($row.hasClass("editing")) {
+            } else {
+                // If there's another row in editing status, cancel the editing state.
+                // Make sure editing row is unique.
+                var $grid = $row.parent().parent();
+                var $editingRows = $grid.find(".editing");
+                if ($editingRows.length !== 0) {
+                    $editingRows.each(removeEditing);
+                    $("html").off("click");
+                }
+
+                // Replace text with input
+                $row.find(".text-field").each(function () {
+                    if (($(this)).has("input").length === 0) {
+                        $row.addClass("editing");
+                        var text = $(this).text();
+                        var $textBox = $("<input>").attr("type", "text").attr("value", text);
+                        $(this).text('').append($textBox);
+                    }
+                });
+
+                // When user clicked elsewhere, remove editing status.
+                $("html").click(function (event) {
+                    if (!$(event.target).closest(".nestedGrid").length && !$(event.target).is(".nestedGrid")) {
+                        removeEditing.bind(this)();
+                        console.log("lalla");
+                        $("html").off("click");
+                    }
+                });
+            }
+        },
+
         // Add trigger
         createSubgridTrigger: function () {
             if (this.isSubgridExist()) {
                 var $expand = $("<div>").addClass("subgrid-trigger").addClass("expand");
                 return $("<td>").append($expand);
             }
-            else{
+            else {
                 return $("<td>");
             }
         },
@@ -285,17 +339,9 @@
                         dataType: "json",
                         data: JSON.stringify(object)
                     });
-                    //$.fn.nestedGrid.reloadGrid(that.$grid.parent());
+                    $.fn.nestedGrid.reloadGrid(that.$grid.parent());
                 }
             }
-        },
-
-        getMaxCol: function () {
-            var maxCol = 0;
-            this.$row.find('td').each(function () {
-                maxCol += 1;
-            });
-            return maxCol;
         },
 
         getSubgridName: function () {
@@ -315,7 +361,7 @@
             return this.data[this.getSubgridName()[0]] !== undefined;
         },
 
-        reloadRow: function(){
+        reloadRow: function () {
             var row = new Row(this.data, this.fields, this.$grid);
             this.$row.html(row.$row.html());
             this.$subgrid.html(row.$subgrid.html());

@@ -8,17 +8,27 @@ table, th, td {
 }
 
 th, td{
-    padding: 10px;
+    padding: 0.5rem;
 }
 
 tr.odd-row{
     background: #f2f2f2;
 }
 
+tr.editing{
+
+}
+
+td input{
+    padding: 0.5rem;
+    box-sizing: border-box;
+    width: 100%;
+}
+
 th {
-    padding-top: 12px;
-    padding-bottom: 12px;
-    background-color: #4CAF50;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    background-color: #2199e8;
     color: white;
 }
 
