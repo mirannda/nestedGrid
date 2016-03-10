@@ -109,6 +109,7 @@
             var $row = $(this).parent();
             if (!$row.hasClass("editing")){
                 var $html = $("html");
+
                 // If there's another row in editing status, cancel the editing state.
                 // Make sure editing row is unique.
                 var $grid = $row.parents(".nestedGrid").last();
