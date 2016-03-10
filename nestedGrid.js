@@ -60,6 +60,8 @@
             this.$grid = $("<table>");
             this.$grid.append(this.createHeader());
             this.$grid.append(this.createBody());
+            this.$grid.on("click", ".text-field", this.editRow);
+
             this.$grid.addClass("nestedGrid");
             this.$grid.data("table", this.tableName);
             this.$grid.data("data", this.data);
@@ -93,7 +95,53 @@
                 rows = rows.concat(rows, row.getRow());
             }
             return $("<tbody>").append(rows);
+        },
+
+        // Allow user to edit data in the row
+        editRow: function () {
+            var removeEditing = function(){
+                $(this).find(".text-field").each(function () {
+                    var textBox = $(this).find("input");
+                    $(this).text(textBox.val());
+                    textBox.remove();
+                });
+                $(this).removeClass("editing");
+            };
+
+            var $row = $(this).parent();
+
+            if ($row.hasClass("editing")) {
+            } else {
+                // If there's another row in editing status, cancel the editing state.
+                // Make sure editing row is unique.
+                var $grid = $row.parent().parent();
+                var $editingRows = $grid.find(".editing");
+                if ($editingRows.length !== 0) {
+                    $editingRows.each(removeEditing);
+                    $("html").off("click");
+                }
+
+                // Replace text with input
+                $row.find(".text-field").each(function () {
+                    if (($(this)).has("input").length === 0) {
+                        $row.addClass("editing");
+                        var text = $(this).text();
+                        var $textBox = $("<input>").attr("type", "text").attr("value", text);
+                        $(this).text('').append($textBox);
+                    }
+                });
+
+                // When user clicked elsewhere, remove editing status.
+                $("html").click(function (event) {
+                    if (!$(event.target).closest(".nestedGrid").length && !$(event.target).is(".nestedGrid")) {
+                        var $that = $(".nestedGrid").find("tr");
+                        removeEditing.bind($that)();
+                        $("html").off("click");
+                    }
+                });
+            }
         }
+
 
     };
 
@@ -112,20 +160,7 @@
         init: function () {
             this.$row = $("<tr>");
             this.topLevelFields = showTopLevelFields(this.fields);
-            this.createRow();
-        },
 
-        //Return $row selector and $subgrid selector
-        getRow: function () {
-            var result = [];
-            result.push(this.$row);
-            if (this.$subgrid) {
-                result.push(this.$subgrid);
-            }
-            return result;
-        },
-
-        createRow: function () {
             var $rowData = [];
             var $subgridTrigger = this.createSubgridTrigger();
             $rowData.push($subgridTrigger);
@@ -136,8 +171,6 @@
             // Event delegation
             this.$row.on("click", ".save-link", this.editEvent().saveClickEvent);
             this.$row.on("click", ".delete-link", this.editEvent().deleteClickEvent);
-            this.$row.on("click", ".text-field", this.editRow);
-            //this.$row.on("click", ".text-field", this.fieldClickEvent());
 
             // Add subgrid
             if (this.isSubgridExist()) {
@@ -156,6 +189,18 @@
                     }
                 });
             }
+
+            this.$row.data("data", this.data);
+        },
+
+        //Return $row selector and $subgrid selector
+        getRow: function () {
+            var result = [];
+            result.push(this.$row);
+            if (this.$subgrid) {
+                result.push(this.$subgrid);
+            }
+            return result;
         },
 
         // Add subgrid to existing grid
@@ -204,80 +249,14 @@
             return $result;
         },
 
-        // Event handlers for save and delete
-        fieldClickEvent: function () {
-            //Change normal field to text box which allows user to edit.
-            var changeField2TextBox = function changeField2TextBox($field) {
-                var text = $field.text();
-                var $textBox = $("<input>").attr("type", "text").attr("value", text).css("width", "95%");
-                $field.text('').append($textBox);
-                $field.focusout(function () {
-                    var text = $textBox.val();
-                    $textBox.parent().text(text);
-                    $textBox.remove();
-                });
-                $textBox.select();
-            };
-            return function () {
-                if (($(this)).has("input").length === 0) {
-                    changeField2TextBox($(this));
-                }
-            };
-        },
-
-        // Allow user to edit data in the row
-        editRow: function () {
-            var removeEditing = function(){
-                $(this).find(".text-field").each(function () {
-                    var textBox = $(this).find("input");
-                    $(this).text(textBox.val());
-                    textBox.remove();
-                });
-                $(this).removeClass("editing");
-            };
-
-            var $row = $(this).parent();
-
-            if ($row.hasClass("editing")) {
-            } else {
-                // If there's another row in editing status, cancel the editing state.
-                // Make sure editing row is unique.
-                var $grid = $row.parent().parent();
-                var $editingRows = $grid.find(".editing");
-                if ($editingRows.length !== 0) {
-                    $editingRows.each(removeEditing);
-                    $("html").off("click");
-                }
-
-                // Replace text with input
-                $row.find(".text-field").each(function () {
-                    if (($(this)).has("input").length === 0) {
-                        $row.addClass("editing");
-                        var text = $(this).text();
-                        var $textBox = $("<input>").attr("type", "text").attr("value", text);
-                        $(this).text('').append($textBox);
-                    }
-                });
-
-                // When user clicked elsewhere, remove editing status.
-                $("html").click(function (event) {
-                    if (!$(event.target).closest(".nestedGrid").length && !$(event.target).is(".nestedGrid")) {
-                        var $that = $(".nestedGrid").find("tr");
-                        removeEditing.bind($that)();
-                        $("html").off("click");
-                    }
-                });
-            }
-        },
-
         // Add trigger
         createSubgridTrigger: function () {
             if (this.isSubgridExist()) {
-                var $expand = $("<div>").addClass("subgrid-trigger").addClass("expand");
+                var $expand = $("<div>").addClass("subgrid-trigger").addClass("expand").addClass("trigger-placeholder");
                 return $("<td>").append($expand);
             }
             else {
-                return $("<td>");
+                return $("<td>").append($("<div>").addClass("trigger-placeholder"));
             }
         },
 
