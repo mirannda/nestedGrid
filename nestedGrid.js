@@ -8,6 +8,7 @@
         $.fn.nestedGrid.Options = $.extend($.fn.nestedGrid.defaultOptions, options);
         this.each(function () {
             var $table = $(this);
+            $(this).data("settings", options);
             setGrid($table, options);
         });
     };
@@ -22,17 +23,12 @@
 
     // Reload the grid
     $.fn.nestedGrid.reloadGrid = function ($container) {
-        var data = $container.children().data("data");
-        var fields = $container.children().data("fields");
-        var tableName = $container.children().data("table");
-        var newGrid = new Grid(data, fields, tableName);
-        $container.html(newGrid.$grid);
+        setGrid($container, $container.data("settings"));
     };
 
     // Pass in selector and this function will make it a grid!
     var setGrid = function ($table, userSettings) {
         var options = $.fn.nestedGrid.Options;
-
         // generate from AJAX
         if (!options.data) {
             var request = $.ajax(options.ajax);
@@ -110,8 +106,7 @@
 
             var $row = $(this).parent();
 
-            if ($row.hasClass("editing")) {
-            } else {
+            if (!$row.hasClass("editing")){
                 // If there's another row in editing status, cancel the editing state.
                 // Make sure editing row is unique.
                 var $grid = $row.parent().parent();
@@ -133,7 +128,7 @@
 
                 // When user clicked elsewhere, remove editing status.
                 $("html").click(function (event) {
-                    if (!$(event.target).closest(".nestedGrid").length && !$(event.target).is(".nestedGrid")) {
+                    if (!$(event.target).closest(".text-field").length && !$(event.target).is(".text-field")) {
                         var $that = $(".nestedGrid").find("tr");
                         removeEditing.bind($that)();
                         $("html").off("click");
@@ -243,7 +238,7 @@
             var fields = this.topLevelFields;
             var $result = [];
             for (var i = 0; i < fields.length; i++) {
-                var $fieldData = $("<td>").append(this.data[fields[i]]).addClass("text-field");
+                var $fieldData = $("<td>").append(this.data[fields[i]]).addClass("text-field").addClass("data");
                 $result.push($fieldData);
             }
             return $result;
@@ -271,22 +266,25 @@
         // Event Handlers for edit and delete button
         editEvent: function () {
             var that = this;
+
             var getData = function () {
                 var obj = {};
                 var i = 0;
-                that.$row.find("td.data").each(function () {
+                $(this).closest("tr").find("td.data").each(function () {
                     obj[that.topLevelFields[i]] = $(this).text();
                     i++;
                 });
                 return obj;
             };
+
             var getTableName = function () {
                 return that.$row.parent().parent().data("table");
             };
             var options = $.fn.nestedGrid.Options;
             return {
-                saveClickEvent: function () {
-                    var newData = getData();
+                saveClickEvent: function (event) {
+                    event.preventDefault();
+                    var newData = getData.bind(this)();
                     var object = {
                         purpose: "edit",
                         tableName: getTableName(),
@@ -300,11 +298,17 @@
                         method: "post",
                         url: options.ajax.url,
                         dataType: "json",
-                        data: JSON.stringify(object)
+                        data: JSON.stringify(object),
+
+                        success: function(){
+                            //Refresh the grid
+                            var $topGrid = $(event.target).parents(".nestedGrid").last();
+                            $.fn.nestedGrid.reloadGrid($topGrid);
+                        }
                     });
-                    that.reloadRow();
                 },
-                deleteClickEvent: function () {
+                deleteClickEvent: function (event) {
+                    event.preventDefault();
                     var object = {
                         purpose: "delete",
                         tableName: getTableName(),
@@ -338,22 +342,7 @@
 
         isSubgridExist: function () {
             return this.data[this.getSubgridName()[0]] !== undefined;
-        },
-
-        reloadRow: function () {
-            var row = new Row(this.data, this.fields, this.$grid);
-            this.$row.html(row.$row.html());
-            this.$subgrid.html(row.$subgrid.html());
         }
-    };
-
-
-    $.fn.nestedGrid.reloadGrid = function ($container) {
-        var data = $container.children().data("data");
-        var fields = $container.children().data("fields");
-        var tableName = $container.children().data("table");
-        var newGrid = new Grid(data, fields, tableName);
-        $container.html(newGrid.$grid);
     };
 
     //Only show fields that are in top level
