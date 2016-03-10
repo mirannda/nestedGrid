@@ -16,8 +16,12 @@ tr.odd-row{
     background: #f2f2f2;
 }
 
-tr.editing{
+tr .even-row{
+    background: white;
+}
 
+tr.editing{
+    background: #BEEB9F;
 }
 
 td input{
@@ -30,7 +34,7 @@ td input{
 th {
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
-    background-color: #2199e8;
+    background-color: #00A388;
     color: white;
 }
 

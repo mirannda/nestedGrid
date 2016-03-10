@@ -100,22 +100,22 @@
             var removeEditing = function(){
                 $(this).find(".text-field").each(function () {
                     var textBox = $(this).find("input");
-                    $(this).text(textBox.val());
-                    textBox.remove();
-                });
+                        $(this).text(textBox.val());
+                        textBox.remove();
+                    });
                 $(this).removeClass("editing");
             };
 
             var $row = $(this).parent();
-
             if (!$row.hasClass("editing")){
+                var $html = $("html");
                 // If there's another row in editing status, cancel the editing state.
                 // Make sure editing row is unique.
                 var $grid = $row.parents(".nestedGrid").last();
                 var $editingRows = $grid.find(".editing");
                 if ($editingRows.length !== 0) {
                     $editingRows.each(removeEditing);
-                    $("html").off("click");
+                    $html.off("click");
                 }
 
                 // Replace text with input
@@ -129,7 +129,7 @@
                 });
 
                 // When user clicked elsewhere, remove editing status.
-                $("html").click(function (event) {
+                $html.click(function (event) {
                     if (!$(event.target).closest(".text-field").length && !$(event.target).is(".text-field")) {
                         var $that = $(".nestedGrid").find("tr");
                         removeEditing.bind($that)();
@@ -142,13 +142,22 @@
         editEvent: function () {
             // Get values in fields
             var getFieldData = function () {
+                var $row = $(this).closest("tr");
                 var obj = {};
-                var i = 0;
                 var topLevelFields = showTopLevelFields($(this).closest(".nestedGrid").data("fields"));
-                $(this).closest("tr").find("td.data").each(function () {
-                    obj[topLevelFields[i]] = $(this).text();
-                    i++;
-                });
+                var i = 0;
+                if($row.hasClass("editing")){
+                    $row.find("td input").each(function () {
+                        obj[topLevelFields[i]] = $(this).val();
+                        i++;
+                    });
+                }
+                else {
+                    $row.find("td.data").each(function () {
+                        obj[topLevelFields[i]] = $(this).text();
+                        i++;
+                    });
+                }
                 return obj;
             };
 
