@@ -262,7 +262,8 @@
                 // When user clicked elsewhere, remove editing status.
                 $("html").click(function (event) {
                     if (!$(event.target).closest(".nestedGrid").length && !$(event.target).is(".nestedGrid")) {
-                        removeEditing.bind(this)();
+                        var $that = $(".nestedGrid").find("tr");
+                        removeEditing.bind($that)();
                         $("html").off("click");
                     }
                 });

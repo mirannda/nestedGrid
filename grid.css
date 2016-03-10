@@ -1,6 +1,7 @@
 table {
     border-collapse: collapse;
     overflow-x:auto;
+    font-size: 1rem;
 }
 
 table, th, td {
@@ -23,6 +24,7 @@ td input{
     padding: 0.5rem;
     box-sizing: border-box;
     width: 100%;
+    font-size: 1rem;
 }
 
 th {
