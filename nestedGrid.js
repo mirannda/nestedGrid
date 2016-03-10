@@ -57,6 +57,8 @@
             this.$grid.append(this.createHeader());
             this.$grid.append(this.createBody());
             this.$grid.on("click", ".text-field", this.editRow);
+            this.$grid.on("click", ".save-link", this.editEvent().saveClickEvent);
+            this.$grid.on("click", ".delete-link", this.editEvent().deleteClickEvent);
 
             this.$grid.addClass("nestedGrid");
             this.$grid.data("table", this.tableName);
@@ -109,7 +111,7 @@
             if (!$row.hasClass("editing")){
                 // If there's another row in editing status, cancel the editing state.
                 // Make sure editing row is unique.
-                var $grid = $row.parent().parent();
+                var $grid = $row.parents(".nestedGrid").last();
                 var $editingRows = $grid.find(".editing");
                 if ($editingRows.length !== 0) {
                     $editingRows.each(removeEditing);
@@ -135,9 +137,77 @@
                     }
                 });
             }
+        },
+
+        editEvent: function () {
+            // Get values in fields
+            var getFieldData = function () {
+                var obj = {};
+                var i = 0;
+                var topLevelFields = showTopLevelFields($(this).closest(".nestedGrid").data("fields"));
+                $(this).closest("tr").find("td.data").each(function () {
+                    obj[topLevelFields[i]] = $(this).text();
+                    i++;
+                });
+                return obj;
+            };
+
+            var getOriginalData = function() {
+                return $(this).closest("tr").data("data");
+            };
+
+            var getTableName = function () {
+                return $(this).closest(".nestedGrid").data("table");
+            };
+            var options = $.fn.nestedGrid.Options;
+            return {
+                saveClickEvent: function (event) {
+                    event.preventDefault();
+                    var newData = getFieldData.bind(this)();
+                    var object = {
+                        purpose: "edit",
+                        tableName: getTableName.bind(this)(),
+                        new: newData,
+                        old: getOriginalData.bind(this)()
+                    };
+                    console.log(object.new);
+                    console.log(object.old);
+                    //Pass data to server
+                    $.ajax({
+                        method: "post",
+                        url: options.ajax.url,
+                        dataType: "json",
+                        data: JSON.stringify(object),
+
+                        success: function(){
+                            //Refresh the grid
+                            var $topContainer = $(event.target).parents(".nestedGrid").last().parent();
+                            $.fn.nestedGrid.reloadGrid($topContainer);
+                        }
+                    });
+                },
+                deleteClickEvent: function (event) {
+                    event.preventDefault();
+                    var object = {
+                        purpose: "delete",
+                        tableName: getTableName(),
+                        old: getOriginalData.bind(this)()
+                    };
+                    console.log(object.old);
+                    $.ajax({
+                        method: "post",
+                        url: options.ajax.url,
+                        dataType: "json",
+                        data: JSON.stringify(object),
+
+                        success: function(){
+                            var $topContainer = $(event.target).parents(".nestedGrid").last().parent();
+                            $.fn.nestedGrid.reloadGrid($topContainer);
+                        }
+                    });
+                }
+            }
         }
-
-
     };
 
     // Constructor for Row
@@ -163,9 +233,9 @@
             $rowData.push(this.createSaveDeleteField());
             this.$row.append($rowData);
 
-            // Event delegation
-            this.$row.on("click", ".save-link", this.editEvent().saveClickEvent);
-            this.$row.on("click", ".delete-link", this.editEvent().deleteClickEvent);
+            //// Event delegation
+            //this.$row.on("click", ".save-link", this.editEvent().saveClickEvent);
+            //this.$row.on("click", ".delete-link", this.editEvent().deleteClickEvent);
 
             // Add subgrid
             if (this.isSubgridExist()) {
@@ -261,70 +331,6 @@
             var $delete = $("<a>").append("delete").attr("href", "#").addClass("delete-link");
             $editField.append($save).append(" ").append($delete);
             return $editField;
-        },
-
-        // Event Handlers for edit and delete button
-        editEvent: function () {
-            var that = this;
-
-            var getData = function () {
-                var obj = {};
-                var i = 0;
-                $(this).closest("tr").find("td.data").each(function () {
-                    obj[that.topLevelFields[i]] = $(this).text();
-                    i++;
-                });
-                return obj;
-            };
-
-            var getTableName = function () {
-                return that.$row.parent().parent().data("table");
-            };
-            var options = $.fn.nestedGrid.Options;
-            return {
-                saveClickEvent: function (event) {
-                    event.preventDefault();
-                    var newData = getData.bind(this)();
-                    var object = {
-                        purpose: "edit",
-                        tableName: getTableName(),
-                        new: newData,
-                        old: that.data
-                    };
-                    console.log(object.new);
-                    console.log(object.old);
-                    //Pass data to server
-                    $.ajax({
-                        method: "post",
-                        url: options.ajax.url,
-                        dataType: "json",
-                        data: JSON.stringify(object),
-
-                        success: function(){
-                            //Refresh the grid
-                            var $topGrid = $(event.target).parents(".nestedGrid").last();
-                            $.fn.nestedGrid.reloadGrid($topGrid);
-                        }
-                    });
-                },
-                deleteClickEvent: function (event) {
-                    event.preventDefault();
-                    var object = {
-                        purpose: "delete",
-                        tableName: getTableName(),
-                        old: that.data
-                    };
-                    console.log(object.old);
-                    that.$row.remove();
-                    $.ajax({
-                        method: "post",
-                        url: options.ajax.url,
-                        dataType: "json",
-                        data: JSON.stringify(object)
-                    });
-                    $.fn.nestedGrid.reloadGrid(that.$grid.parent());
-                }
-            }
         },
 
         getSubgridName: function () {
