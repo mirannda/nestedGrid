@@ -1,10 +1,10 @@
-.nestedGrid table {
+table.nestedGrid  {
     border-collapse: collapse;
     overflow-x:auto;
     font-size: 1rem;
 }
 
-.nestedGrid table, th, td {
+table.nestedGrid, th, td {
     border: 1px solid #ddd;
 }
 
@@ -16,11 +16,15 @@
     background: #f2f2f2;
 }
 
-.nestedGrid tr .even-row{
+.nestedGrid tr.even-row{
     background: white;
 }
 
-.nestedGrid tr.editing{
+.nestedGrid tr.odd-row:hover, .nestedGrid tr.even-row:hover{
+    background: #e6e6e6;
+}
+
+.nestedGrid tr.editing, .nestedGrid tr.editing:hover{
     background: #BEEB9F;
 }
 
